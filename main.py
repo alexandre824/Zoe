@@ -4,6 +4,20 @@ import queue
 import sounddevice as sd
 import vosk
 import sys
+import pyttsx3
+import json
+
+#sintese de fala
+
+engine = pyttsx3.init()
+
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[-2].id) #-1 voz em ingles -2 voz em portugues
+
+def speak(text):
+    # engine.say("Como vai meu criador")
+    engine.say(text)
+    engine.runAndWait()
 
 q = queue.Queue()
 
@@ -64,24 +78,33 @@ try:
     else:
         dump_fn = None
 
-    with sd.RawInputStream(samplerate=args.samplerate, blocksize = 8000, device=args.device, dtype='int16',
+    with sd.RawInputStream(samplerate=args.samplerate, blocksize = 1000, device=args.device, dtype='int16',
                             channels=1, callback=callback):
             print('#' * 80)
-            print('Press Ctrl+C to stop the recording')
+            # print('Press Ctrl+C to stop the recording')
+            speak('Ola   soa   Zoe   sua   assistente   Virtual')
             print('#' * 80)
 
             rec = vosk.KaldiRecognizer(model, args.samplerate)
             while True:
                 data = q.get()
                 if rec.AcceptWaveform(data):
-                    print(rec.Result())
-                else:
-                    print(rec.PartialResult())
-                if dump_fn is not None:
-                    dump_fn.write(data)
+                    # print(rec.Result())
+                    result = rec.Result()
+                    result = json.loads(result)
+                    if result is not None:
+                        text = result['text']
+
+                    print(text)
+                    speak(text)
+                    # print(result)
+                # else:
+                #     print(rec.PartialResult())
+                # if dump_fn is not None:
+                #     dump_fn.write(data)
 
 except KeyboardInterrupt:
     print('\nDone')
     parser.exit(0)
-except Exception as e:
-    parser.exit(type(e).__name__ + ': ' + str(e))
+# except Exception as e:
+#     parser.exit(type(e).__name__ + ': ' + str(e))
